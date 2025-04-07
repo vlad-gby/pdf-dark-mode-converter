@@ -27,226 +27,412 @@
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
+        // Set worker source for pdf.js
         pdfjsLib.GlobalWorkerOptions.workerSrc ="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js"
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.11.0/pdf-lib.min.js" crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js" integrity="sha512-z8IYLHO8bTgFBCj+4jGjPskhQpYF5dM4MFxCjPMMWnEu76xM0QhM+3BHU5jM3RjWdXjTzqaVnLwHj4PzQhYQYw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <style>
+        /* Basic styling for the page */
         body {
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             text-align: center;
-            background-color: #121212;
-            color: white;
+            background-color: #1e1e1e; /* Dark background */
+            color: #e0e0e0; /* Light text */
             padding: 20px;
+            line-height: 1.6;
         }
         html, body {
             margin: 0;
             padding: 0;
             width: 100%;
-            height: 100%;
+            min-height: 100%;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #2a2a2a;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
         }
         .notice {
-            background-color: #1e1e1e;
-            padding: 10px;
+            background-color: #333;
+            padding: 15px;
             border-radius: 5px;
-            margin: 20px auto 20px auto;
-            font-size: 14px;
-            color: #bbb;
-            max-width: 80%;
+            margin: 0 auto 25px auto;
+            font-size: 0.9em;
+            color: #ccc;
+            max-width: 90%;
+            border-left: 4px solid #007bff;
         }
+        /* Hide default file input */
         .file-input {
             display: none;
         }
+        /* Style the custom upload button */
         .custom-file-upload {
             display: inline-block;
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            margin-bottom: 10px;
-        }
-        canvas {
-            border: 1px solid white;
-            margin-top: 10px;
-            width: 100%;
-        }
-        #pdfContainer {
-            width: 70%;
-            margin: 0 auto;
-        }
-        #progressContainer {
-            width: 80%;
-            max-width: 400px;
-            background-color: #222;
-            display: none;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 20px auto;
-            text-align: center;
-        }
-        #progressBar {
-            height: 20px;
-            background-color: #007bff;
-            width: 0;
-            text-align: center;
-            line-height: 20px;
-            color: white;
-            border-radius: 5px;
-            transition: width 0.3s ease-in-out;
-        }
-        #progressText {
-            margin-top: 5px;
-            color: white;
-            font-weight: bold;
-        }
-        #downloadBtn {
-            margin-top: 20px;
-            padding: 10px 20px;
+            padding: 12px 25px;
             background-color: #007bff;
             color: white;
             border: none;
-            cursor: pointer;
-            display: none;
-            position: relative;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 16px;
             border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            margin-bottom: 20px;
+            transition: background-color 0.3s ease;
         }
+        .custom-file-upload:hover {
+            background-color: #0056b3;
+        }
+        /* Progress bar styling */
+        #progressContainer {
+            width: 90%;
+            max-width: 500px;
+            background-color: #444;
+            border-radius: 5px;
+            margin: 20px auto;
+            padding: 5px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+            display: none; /* Hidden by default */
+        }
+        #progressBar {
+            height: 24px;
+            background-color: #007bff;
+            width: 0; /* Start at 0 width */
+            text-align: center;
+            line-height: 24px;
+            color: white;
+            font-weight: bold;
+            border-radius: 3px;
+            transition: width 0.4s ease;
+        }
+        #progressText {
+            margin-top: 8px;
+            color: #ccc;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        /* Download button styling */
+        #downloadBtn {
+            margin-top: 25px;
+            padding: 12px 25px;
+            background-color: #28a745; /* Green color */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            display: none; /* Hidden by default */
+            transition: background-color 0.3s ease;
+        }
+        #downloadBtn:hover {
+            background-color: #218838;
+        }
+        /* GitHub ribbon styling */
         .github-ribbon {
             position: fixed;
-            top: 20px;
-            left: 20px;
+            top: 0; /* Changed from 20px */
+            left: 0; /* Changed from 20px */
             z-index: 1000;
+            border: 0; /* Added for consistency */
         }
+        .github-ribbon img{
+             width: 149px; /* Ensure size is explicit */
+             height: 149px;
+        }
+
+        /* Responsive adjustments */
         @media (max-width: 768px) {
+            .container {
+                width: 95%;
+                padding: 15px;
+            }
+            .notice {
+                font-size: 0.85em;
+                margin-bottom: 20px;
+            }
+            .custom-file-upload, #downloadBtn {
+                padding: 10px 20px;
+                font-size: 0.95em;
+            }
+             /* Move ribbon to bottom right on smaller screens */
             .github-ribbon {
                 top: auto;
-                bottom: 20px;
-                right: 10px;
+                bottom: 0; /* Changed from 20px */
+                right: 0; /* Changed from 10px */
                 left: auto;
             }
             .github-ribbon img {
-                width: 100px;
-                height: auto;
-            }
-            .notice {
-                font-size: 12px;
-                margin-top: 50px;
+                width: 100px; /* Smaller ribbon */
+                height: 100px;
             }
         }
+         @media (max-width: 480px) {
+             h1 {
+                 font-size: 1.5em;
+             }
+         }
     </style>
 </head>
 <body>
-    <a href="https://github.com/Chizkiyahu/pdf-dark-mode-converter" class="github-ribbon">
-        <img decoding="async" width="149" height="149" src="./img/forkme_left_red_aa0000.png" alt="View Source Code on GitHub" loading="lazy">
+    <a href="https://github.com/Chizkiyahu/pdf-dark-mode-converter" class="github-ribbon" aria-label="View source on GitHub">
+        <img decoding="async" width="149" height="149" src="https://github.blog/wp-content/uploads/2008/12/forkme_left_red_aa0000.png?resize=149%2C149" alt="Fork me on GitHub" loading="lazy">
     </a>
+
     <div class="container">
         <div class="notice">
             🔒 This tool runs completely on your device. No data is uploaded or sent to any server. Your privacy is 100% protected.
         </div>
         <h1>PDF Dark Mode Converter</h1>
+
         <label for="fileInput" class="custom-file-upload">Choose PDF File</label>
         <input type="file" id="fileInput" class="file-input" accept="application/pdf">
+
         <div id="progressContainer">
             <div id="progressBar"></div>
-            <div id="progressText">0/0</div>
+            <div id="progressText">Processing...</div>
         </div>
-        <button id="downloadBtn">Download failed? Click here</button>
+
+        <button id="downloadBtn">Download Dark Mode PDF</button>
+
         <div id="pdfContainer"></div>
     </div>
+
     <script>
-        let modifiedPdfBytes;
+        // Global variables to store modified PDF data and original filename
+        let modifiedPdfBytes = null; // Initialize to null
         let originalFileName = "";
 
+        // DOM element references
+        const fileInputElement = document.getElementById('fileInput');
+        const downloadButton = document.getElementById('downloadBtn');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+
+        /**
+         * Handles the selected file (from input or drag/drop).
+         * Reads the file and starts the PDF processing.
+         * @param {File} file - The PDF file selected by the user.
+         */
         function handleFile(file) {
+            // Basic validation for PDF type
+            if (!file || file.type !== 'application/pdf') {
+                alert('Please select a valid PDF file.');
+                resetUI();
+                return;
+            }
+
+            // Extract original filename without extension
             originalFileName = file.name.replace(/\.pdf$/i, '');
+            modifiedPdfBytes = null; // Reset previous results
+            downloadButton.style.display = 'none'; // Hide download button
+
             const fileReader = new FileReader();
+
+            // Show progress bar immediately
+            progressContainer.style.display = 'block';
+            progressBar.style.width = '0%';
+            progressText.innerText = 'Reading file...';
+
+            // Define what happens when the file is loaded
             fileReader.onload = async function() {
-                document.getElementById('progressContainer').style.display = 'block';
-                await renderPDF(new Uint8Array(this.result));
+                try {
+                    progressText.innerText = 'Processing PDF...';
+                    // Start the PDF modification process
+                    await processPDF(new Uint8Array(this.result));
+                } catch (error) {
+                    console.error("Error during file processing:", error);
+                    alert(`An error occurred while processing the PDF: ${error.message}. Please try a different file.`);
+                    resetUI(); // Reset UI on error
+                }
             };
+
+            // Define error handling for file reading
+            fileReader.onerror = function() {
+                console.error("Error reading file:", fileReader.error);
+                alert("An error occurred while reading the file.");
+                resetUI();
+            };
+
+            // Read the file as an ArrayBuffer
             fileReader.readAsArrayBuffer(file);
         }
 
-        document.getElementById('fileInput').addEventListener('change', function(event) {
+        /**
+         * Resets the UI elements to their initial state.
+         */
+        function resetUI() {
+            progressContainer.style.display = 'none';
+            progressBar.style.width = '0%';
+            downloadButton.style.display = 'none';
+            fileInputElement.value = ''; // Clear the file input
+        }
+
+
+        // --- Event Listeners ---
+
+        // Listen for file selection via the input element
+        fileInputElement.addEventListener('change', function(event) {
             if (event.target.files.length > 0) {
                 handleFile(event.target.files[0]);
             }
         });
 
+        // Set up drag and drop listeners
         document.body.addEventListener('dragover', function(event) {
-            event.preventDefault();
+            event.preventDefault(); // Prevent default browser behavior (opening file)
+            // Optional: Add visual feedback for dragover
+            document.body.style.backgroundColor = '#333';
         });
-
+         document.body.addEventListener('dragleave', function(event) {
+            // Optional: Remove visual feedback
+            document.body.style.backgroundColor = '#1e1e1e';
+        });
         document.body.addEventListener('drop', function(event) {
-            event.preventDefault();
+            event.preventDefault(); // Prevent default browser behavior
+            document.body.style.backgroundColor = '#1e1e1e'; // Reset background
             if (event.dataTransfer.files.length > 0) {
                 handleFile(event.dataTransfer.files[0]);
             }
         });
 
-        async function renderPDF(pdfData) {
-            try {
-                const pdfDoc = await PDFLib.PDFDocument.load(pdfData); // Use PDFLib to load
-                const numPages = pdfDoc.getPageCount();
-                const progressBar = document.getElementById('progressBar');
-                const progressText = document.getElementById('progressText');
-                const pdfContainer = document.getElementById('pdfContainer');
-                pdfContainer.innerHTML = '';
+        // Listen for clicks on the download button
+        downloadButton.addEventListener('click', triggerDownload);
 
+
+        // --- Core PDF Processing Logic ---
+
+        /**
+         * Processes the PDF data to attempt color inversion using pdf-lib.
+         * NOTE: This direct content stream modification is experimental and may not work reliably.
+         * @param {Uint8Array} pdfData - The raw byte data of the PDF file.
+         */
+        async function processPDF(pdfData) {
+            // Ensure pdf-lib is loaded (it's deferred)
+             if (typeof PDFLib === 'undefined') {
+                alert('PDF processing library not loaded yet. Please wait a moment and try again.');
+                resetUI();
+                return;
+             }
+            const { PDFDocument, StandardFonts, rgb, cmyk, grayscale } = PDFLib; // Destructure needed components
+
+            try {
+                // Load the PDF document using pdf-lib
+                const pdfDoc = await PDFDocument.load(pdfData, {
+                     // Option to ignore encryption if needed, use with caution
+                     // ignoreEncryption: true,
+                     // Option to update metadata if needed
+                     // updateMetadata: false
+                 });
+                const numPages = pdfDoc.getPageCount();
+
+                // --- WARNING: Experimental Color Inversion ---
+                // This section attempts to modify content streams directly.
+                // It's fragile and likely won't work for many PDFs or color types.
+                // A robust solution requires proper parsing of PDF operators.
                 for (let i = 0; i < numPages; i++) {
-                    progressBar.style.width = `${((i + 1) / numPages) * 100}%`;
-                    progressText.innerText = (i + 1 === numPages) ? "Finalizing... Almost done!" : `${i + 1}/${numPages}`;
+                    // Update progress bar for each page
+                    const progress = ((i + 1) / numPages) * 100;
+                    progressBar.style.width = `${progress}%`;
+                    progressBar.innerText = `${Math.round(progress)}%`; // Show percentage on bar
+                    progressText.innerText = `Processing page ${i + 1}/${numPages}...`;
 
                     const page = pdfDoc.getPage(i);
+                    try {
+                         const contentStream = page.getContentStream();
+                         if (contentStream) {
+                             const operators = contentStream.getOperators();
 
-                    //Use PDFLib to get content streams
-                    const contentStreams = page.getContentStreams();
+                             // Iterate through operators to find color setting ones
+                             // This is still basic and won't catch all cases
+                             operators.forEach(op => {
+                                 // Example: Try to invert RGB fill colors (rg operator)
+                                 if (op.name === 'rg' && op.args.length === 3) {
+                                     op.args[0] = 1.0 - op.args[0]; // Invert Red (0-1 range)
+                                     op.args[1] = 1.0 - op.args[1]; // Invert Green
+                                     op.args[2] = 1.0 - op.args[2]; // Invert Blue
+                                 }
+                                 // Example: Try to invert RGB stroke colors (RG operator)
+                                 else if (op.name === 'RG' && op.args.length === 3) {
+                                     op.args[0] = 1.0 - op.args[0];
+                                     op.args[1] = 1.0 - op.args[1];
+                                     op.args[2] = 1.0 - op.args[2];
+                                 }
+                                 // Example: Try to invert Grayscale fill (g operator)
+                                 else if (op.name === 'g' && op.args.length === 1) {
+                                     op.args[0] = 1.0 - op.args[0];
+                                 }
+                                 // Example: Try to invert Grayscale stroke (G operator)
+                                  else if (op.name === 'G' && op.args.length === 1) {
+                                     op.args[0] = 1.0 - op.args[0];
+                                 }
+                                 // Add more conditions for CMYK (k, K) if needed, inversion is more complex
+                             });
 
-                    for (const stream of contentStreams)
-                    {
-                        const streamData = await stream.getRawBytes();
-                        const decodedText = new TextDecoder().decode(streamData);
-                        //Simple regex for color inversion.  This will need to be expanded.
-                        const invertedText = decodedText.replace(/T[RGB] [0-9\.]+ [0-9\.]+ [0-9\.]+/g, (color) => {
-                            const parts = color.split(' ').map(Number);
-                            if (parts.length === 4) {
-                                return `TRGB ${255 - parts[1]} ${255 - parts[2]} ${255 - parts[3]}`;
-                            }
-                            return color; // Return original if not a color we can easily invert
-                        });
-                        stream.setBytes(new TextEncoder().encode(invertedText));
-                    }
+                             // Update the content stream with modified operators
+                             contentStream.setOperators(operators);
+                         }
+                     } catch (pageError) {
+                         console.warn(`Could not process content stream for page ${i + 1}: ${pageError.message}`);
+                         // Optionally continue to next page or stop
+                     }
+
+                    // Yield control briefly to allow UI updates, especially for large PDFs
+                    await new Promise(resolve => setTimeout(resolve, 0));
                 }
-                // Save the modified PDF
+                // --- End Experimental Section ---
+
+
+                progressText.innerText = 'Finalizing...';
+                progressBar.style.width = '100%';
+                progressBar.innerText = '100%';
+
+                // Save the modified PDF document to bytes
                 modifiedPdfBytes = await pdfDoc.save();
-                document.getElementById('progressContainer').style.display = 'none';
-                triggerDownload();
+
+                // Hide progress and show download button
+                progressContainer.style.display = 'none';
+                downloadButton.style.display = 'inline-block'; // Show the download button
+
+                // Optional: Automatically trigger download immediately
+                // triggerDownload();
 
             } catch (error) {
-                console.error("Error processing PDF:", error);
-                alert("An error occurred while processing the PDF. Please try a different file.");
-                document.getElementById('progressContainer').style.display = 'none';
+                console.error("Error processing PDF with pdf-lib:", error);
+                // Provide more specific error messages if possible
+                if (error.message.includes('encrypted')) {
+                     alert("Could not process the PDF because it is encrypted or password-protected.");
+                } else {
+                     alert(`An error occurred while processing the PDF: ${error.message}. The file might be corrupted or use unsupported features.`);
+                }
+                resetUI(); // Reset UI on failure
             }
         }
 
+        /**
+         * Triggers the download of the modified PDF file.
+         */
         function triggerDownload() {
             if (modifiedPdfBytes) {
                 const blob = new Blob([modifiedPdfBytes], { type: 'application/pdf' });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
+                // Create filename for the downloaded file
                 link.download = `${originalFileName}_dark_mode.pdf`;
+                // Append link to body, click it, and then remove it
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-                document.getElementById('downloadBtn').style.display = 'block';
+                // Revoke the object URL to free up memory
+                URL.revokeObjectURL(link.href);
+            } else {
+                alert("No modified PDF available to download. Please process a file first.");
             }
         }
 
-        document.getElementById('downloadBtn').addEventListener('click', triggerDownload);
     </script>
 </body>
 </html>
