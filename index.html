@@ -10,23 +10,21 @@
     <meta property="og:title" content="Convert PDFs to Dark Mode – Secure, Local & Private Offline Tool">
     <meta property="og:description" content="Easily convert PDFs to dark mode with our free, no-upload tool. Reduce eye strain while keeping your documents private with local conversion.">
     <meta property="og:url" content="https://chizkiyahu.github.io/pdf-dark-mode-converter/">
-
     <script type="application/ld+json">
     {
-      "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      "name": "PDF Dark Mode Converter",
-      "description": "A free online tool to convert PDFs to dark mode, reducing eye strain.",
-      "applicationCategory": "Utility",
-      "operatingSystem": "Web-based",
-      "url": "https://chizkiyahu.github.io/pdf-dark-mode-converter/",
-      "author": {
-        "@type": "Person",
-        "name": "Chizkiyahu"
-      }
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "PDF Dark Mode Converter",
+        "description": "A free online tool to convert PDFs to dark mode, reducing eye strain.",
+        "applicationCategory": "Utility",
+        "operatingSystem": "Web-based",
+        "url": "https://chizkiyahu.github.io/pdf-dark-mode-converter/",
+        "author": {
+            "@type": "Person",
+            "name": "Chizkiyahu"
+        }
     }
     </script>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc ="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js"
@@ -159,7 +157,6 @@
         <button id="downloadBtn">Download failed? Click here</button>
         <div id="pdfContainer"></div>
     </div>
-
     <script>
         let modifiedPdfBytes;
         let originalFileName = "";
@@ -192,59 +189,48 @@
         });
 
         async function renderPDF(pdfData) {
-            const pdfDoc = await PDFLib.PDFDocument.create();
-            const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
-            const progressBar = document.getElementById('progressBar');
-            const progressText = document.getElementById('progressText');
-            const pdfContainer = document.getElementById('pdfContainer');
-            pdfContainer.innerHTML = '';
+            try {
+                const pdfDoc = await PDFLib.PDFDocument.load(pdfData); // Use PDFLib to load
+                const numPages = pdfDoc.getPageCount();
+                const progressBar = document.getElementById('progressBar');
+                const progressText = document.getElementById('progressText');
+                const pdfContainer = document.getElementById('pdfContainer');
+                pdfContainer.innerHTML = '';
 
-            for (let i = 0; i < pdf.numPages; i++) {
-                progressBar.style.width = `${((i + 1) / pdf.numPages) * 100}%`;
-                progressText.innerText = (i + 1 === pdf.numPages) ? "Finalizing... Almost done!" : `${i + 1}/${pdf.numPages}`;
+                for (let i = 0; i < numPages; i++) {
+                    progressBar.style.width = `${((i + 1) / numPages) * 100}%`;
+                    progressText.innerText = (i + 1 === numPages) ? "Finalizing... Almost done!" : `${i + 1}/${numPages}`;
 
-                const page = await pdf.getPage(i + 1);
-                const scale = 1.5;
-                const viewport = page.getViewport({ scale });
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
+                    const page = pdfDoc.getPage(i);
 
-                canvas.width = viewport.width;
-                canvas.height = viewport.height;
+                    //Use PDFLib to get content streams
+                    const contentStreams = page.getContentStreams();
 
-                const renderContext = {
-                    canvasContext: ctx,
-                    viewport: viewport
-                };
-                await page.render(renderContext).promise;
-
-                // Apply dark mode effect
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const data = imageData.data;
-
-                for (let j = 0; j < data.length; j += 4) {
-                    data[j] = 255 - data[j];     // Red
-                    data[j + 1] = 255 - data[j + 1]; // Green
-                    data[j + 2] = 255 - data[j + 2]; // Blue
+                    for (const stream of contentStreams)
+                    {
+                        const streamData = await stream.getRawBytes();
+                        const decodedText = new TextDecoder().decode(streamData);
+                        //Simple regex for color inversion.  This will need to be expanded.
+                        const invertedText = decodedText.replace(/T[RGB] [0-9\.]+ [0-9\.]+ [0-9\.]+/g, (color) => {
+                            const parts = color.split(' ').map(Number);
+                            if (parts.length === 4) {
+                                return `TRGB ${255 - parts[1]} ${255 - parts[2]} ${255 - parts[3]}`;
+                            }
+                            return color; // Return original if not a color we can easily invert
+                        });
+                        stream.setBytes(new TextEncoder().encode(invertedText));
+                    }
                 }
-                ctx.putImageData(imageData, 0, 0);
+                // Save the modified PDF
+                modifiedPdfBytes = await pdfDoc.save();
+                document.getElementById('progressContainer').style.display = 'none';
+                triggerDownload();
 
-                pdfContainer.appendChild(canvas);
-
-                // Convert modified canvas to PNG and add to PDF
-                const imgBytes = await new Promise(resolve => canvas.toBlob(blob => blob.arrayBuffer().then(resolve), 'image/png'));
-                const jpgImage = await pdfDoc.embedPng(imgBytes);
-                const newPage = pdfDoc.addPage([viewport.width, viewport.height]);
-                newPage.drawImage(jpgImage, {
-                    x: 0,
-                    y: 0,
-                    width: viewport.width,
-                    height: viewport.height
-                });
+            } catch (error) {
+                console.error("Error processing PDF:", error);
+                alert("An error occurred while processing the PDF. Please try a different file.");
+                document.getElementById('progressContainer').style.display = 'none';
             }
-            modifiedPdfBytes = await pdfDoc.save();
-            document.getElementById('progressContainer').style.display = 'none';
-            triggerDownload();
         }
 
         function triggerDownload() {
@@ -256,7 +242,6 @@
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-
                 document.getElementById('downloadBtn').style.display = 'block';
             }
         }
